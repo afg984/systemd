@@ -289,9 +289,9 @@ int cunescape_one(const char *p, size_t length, char32_t *ret, bool *eight_bit, 
 }
 
 int cunescape_length_with_prefix(const char *s, size_t length, const char *prefix, UnescapeFlags flags, char **ret) {
-        char *r, *t;
-        const char *f;
+        char *r;
         size_t pl;
+        int el;
 
         assert(s);
         assert(ret);
@@ -307,7 +307,26 @@ int cunescape_length_with_prefix(const char *s, size_t length, const char *prefi
         if (prefix)
                 memcpy(r, prefix, pl);
 
-        for (f = s, t = r + pl; f < s + length; f++) {
+        el = cunescape_length_to(r+pl, s, length, flags);
+        if (el < 0) {
+                free(r);
+                return el;
+        }
+        r[pl+el] = 0;
+
+        *ret = r;
+        return pl + el;
+}
+
+int cunescape_length_to(char* t, const char* f, size_t length, UnescapeFlags flags) {
+        /* unescape characters from f to t, length is the length of f
+         * t must have at least length bytes writable
+         * returns the length of the unescaped string
+         * NUL (\0) is not written */
+        const char *s = f;
+        const char *t0 = t;
+
+        for (; f < s + length; f++) {
                 size_t remaining;
                 bool eight_bit = false;
                 char32_t u;
@@ -329,7 +348,6 @@ int cunescape_length_with_prefix(const char *s, size_t length, const char *prefi
                                 continue;
                         }
 
-                        free(r);
                         return -EINVAL;
                 }
 
@@ -341,7 +359,6 @@ int cunescape_length_with_prefix(const char *s, size_t length, const char *prefi
                                 continue;
                         }
 
-                        free(r);
                         return k;
                 }
 
@@ -354,10 +371,7 @@ int cunescape_length_with_prefix(const char *s, size_t length, const char *prefi
                         t += utf8_encode_unichar(t, u);
         }
 
-        *t = 0;
-
-        *ret = r;
-        return t - r;
+        return t - t0;
 }
 
 char* xescape_full(const char *s, const char *bad, size_t console_width, bool eight_bits) {

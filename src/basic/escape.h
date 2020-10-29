@@ -47,6 +47,7 @@ char* cescape(const char *s);
 char* cescape_length(const char *s, size_t n);
 int cescape_char(char c, char *buf);
 
+int cunescape_length_to(char* t, const char* f, size_t length, UnescapeFlags flags);
 int cunescape_length_with_prefix(const char *s, size_t length, const char *prefix, UnescapeFlags flags, char **ret);
 static inline int cunescape_length(const char *s, size_t length, UnescapeFlags flags, char **ret) {
         return cunescape_length_with_prefix(s, length, NULL, flags, ret);
